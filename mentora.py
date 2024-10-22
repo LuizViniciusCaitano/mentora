@@ -1,5 +1,46 @@
 import os
+import json
 import random
+
+# Nome do arquivo JSON que será utilizado
+FILENAME = 'mentora_data.json'
+
+class Usuario:
+    def __init__(self, nome, email, senha, time=None):
+        self.nome = nome
+        self.email = email
+        self.senha = senha
+        self.time = time
+
+    def to_dict(self):
+        return {
+            "nome": self.nome,
+            "email": self.email,
+            "senha": self.senha,
+            "time": self.time
+        }
+
+class Time:
+    def __init__(self, nome, vagas, jogadores=None):
+        self.nome = nome
+        self.vagas = vagas
+        self.jogadores = jogadores if jogadores is not None else []
+
+    def adicionar_jogador(self, usuario):
+        if self.vagas > 0:
+            self.jogadores.append(usuario.nome)
+            self.vagas -= 1
+            usuario.time = self.nome
+            print(f"Usuário '{usuario.nome}' entrou no time '{self.nome}' com sucesso!")
+        else:
+            print(f"O time '{self.nome}' não possui vagas disponíveis.")
+
+    def to_dict(self):
+        return {
+            "nome": self.nome,
+            "vagas": self.vagas,
+            "jogadores": self.jogadores
+        }
 
 class Mentora:
     def __init__(self):
@@ -8,28 +49,22 @@ class Mentora:
             "Dota 2": ["19:00", "21:00"],
             "Counter-Strike: Global Offensive": ["17:00", "19:30"]
         }
-        self.times = {
-            "Nexus LOL": {"vagas": random.randint(0, 3), "jogadores": []},
-            "Sentinels Valorant": {"vagas": random.randint(0, 3), "jogadores": []},
-            "Loud Valorant": {"vagas": random.randint(0, 3), "jogadores": []},
-            "Furia CS": {"vagas": random.randint(0, 3), "jogadores": []}
-        }
         self.usuarios = []
+        self.times = {}
+
+        # Carrega dados do arquivo JSON ao iniciar
+        self.carregar_dados()
 
     def cadastrar_usuario(self, nome, email, senha):
-        usuario = {
-            "nome": nome,
-            "email": email,
-            "senha": senha,
-            "time": None
-        }
+        usuario = Usuario(nome, email, senha)
         self.usuarios.append(usuario)
+        self.salvar_dados()
         print(f"Usuário '{nome}' cadastrado com sucesso!")
 
     def login_usuario(self, email, senha):
         for usuario in self.usuarios:
-            if usuario["email"] == email and usuario["senha"] == senha:
-                print(f"Login bem-sucedido! Bem-vindo, {usuario['nome']}!")
+            if usuario.email == email and usuario.senha == senha:
+                print(f"Login bem-sucedido! Bem-vindo, {usuario.nome}!")
                 return usuario
         print("Email ou senha incorretos.")
         return None
@@ -41,43 +76,71 @@ class Mentora:
 
     def mostrar_times_disponiveis(self):
         print("\nTimes disponíveis para cadastro:")
-        for time, info in self.times.items():
-            if info["vagas"] > 0:
-                print(f"{time} - Vagas: {info['vagas']}")
+        for time in self.times.values():
+            if time.vagas > 0:
+                print(f"{time.nome} - Vagas: {time.vagas}")
 
     def cadastrar_time(self, nome_time, vagas):
         if nome_time in self.times:
             print(f"O time '{nome_time}' já existe.")
         else:
-            self.times[nome_time] = {"vagas": vagas, "jogadores": []}  # Vagas definidas pelo usuário
+            self.times[nome_time] = Time(nome_time, vagas)
+            self.salvar_dados()
             print(f"Time '{nome_time}' cadastrado com sucesso!")
 
-    def entrar_time(self, usuario, nome_time):
-        if nome_time in self.times:
-            if self.times[nome_time]["vagas"] > 0:
-                self.times[nome_time]["jogadores"].append(usuario["nome"])
-                self.times[nome_time]["vagas"] -= 1
-                usuario["time"] = nome_time
-                print(f"Usuário '{usuario['nome']}' entrou no time '{nome_time}' com sucesso!")
-            else:
-                print(f"O time '{nome_time}' não possui vagas disponíveis.")
+    def entrar_time(self, usuario):
+        print("\nTimes disponíveis para entrada:")
+        times_disponiveis = [time.nome for time in self.times.values() if time.vagas > 0]
+
+        if not times_disponiveis:
+            print("Não há times com vagas disponíveis.")
+            return
+
+        for index, nome_time in enumerate(times_disponiveis, start=1):
+            print(f"{index}. {nome_time} - Vagas: {self.times[nome_time].vagas}")
+
+        escolha = int(input("Escolha o número do time que deseja entrar: ")) - 1
+
+        if 0 <= escolha < len(times_disponiveis):
+            nome_time_escolhido = times_disponiveis[escolha]
+            self.times[nome_time_escolhido].adicionar_jogador(usuario)
+            self.salvar_dados()
         else:
-            print(f"O time '{nome_time}' não existe.")
+            print("Opção inválida!")
 
     def mostrar_times(self):
         print("\nTimes cadastrados:")
-        for time, info in self.times.items():
-            print(f"{time} - Vagas restantes: {info['vagas']} - Jogadores: {', '.join(info['jogadores'])}")
+        for time in self.times.values():
+            print(f"{time.nome} - Vagas restantes: {time.vagas} - Jogadores: {', '.join(time.jogadores)}")
 
     def mostrar_time_atual(self, usuario):
-        if usuario["time"]:
-            time = usuario["time"]
-            jogadores = self.times[time]["jogadores"]
-            print(f"\nSeu time atual: {time}")
-            print(f"Número de jogadores: {len(jogadores)}")
-            print(f"Jogadores: {', '.join(jogadores)}")
+        if usuario.time:
+            time = self.times[usuario.time]
+            print(f"\nSeu time atual: {time.nome}")
+            print(f"Número de jogadores: {len(time.jogadores)}")
+            print(f"Jogadores: {', '.join(time.jogadores)}")
         else:
             print("Você não está em nenhum time.")
+
+    # Funções para salvar e carregar dados do arquivo JSON
+    def salvar_dados(self):
+        data = {
+            "usuarios": [usuario.to_dict() for usuario in self.usuarios],
+            "times": {nome: time.to_dict() for nome, time in self.times.items()}
+        }
+        with open(FILENAME, 'w') as file:
+            json.dump(data, file, indent=4)
+        print("Dados salvos no arquivo JSON.")
+
+    def carregar_dados(self):
+        if os.path.exists(FILENAME):
+            with open(FILENAME, 'r') as file:
+                data = json.load(file)
+                # Carregar usuários
+                self.usuarios = [Usuario(**usuario) for usuario in data.get("usuarios", [])]
+                # Carregar times
+                self.times = {nome: Time(**time) for nome, time in data.get("times", {}).items()}
+            print("Dados carregados do arquivo JSON.")
 
     def clear_screen(self):
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -102,13 +165,13 @@ def main():
             email = input("Email: ")
             senha = input("Senha: ")
             mentora.cadastrar_usuario(nome, email, senha)
-            input("Pressione Enter para continuar...")  # Aguarda o usuário
+            input("Pressione Enter para continuar...")
         elif opcao == "2":
             email = input("Email: ")
             senha = input("Senha: ")
             usuario_logado = mentora.login_usuario(email, senha)
             if usuario_logado:
-                input("Pressione Enter para continuar...")  # Aguarda o usuário antes de limpar a tela
+                input("Pressione Enter para continuar...")
                 while True:
                     mentora.clear_screen()
                     print("\nMenu:")
@@ -130,28 +193,27 @@ def main():
                     elif opcao_menu == "3":
                         nome_time = input("Digite o nome do novo time: ")
                         vagas = int(input("Digite o número de vagas para o time: "))
-                        mentora.cadastrar_time(nome_time, vagas)  # Passa o número de vagas definido pelo usuário
+                        mentora.cadastrar_time(nome_time, vagas)
                     elif opcao_menu == "4":
-                        nome_time = input("Digite o nome do time que deseja entrar: ")
-                        mentora.entrar_time(usuario_logado, nome_time)
+                        mentora.entrar_time(usuario_logado)
                     elif opcao_menu == "5":
                         mentora.mostrar_time_atual(usuario_logado)
                     elif opcao_menu == "6":
                         mentora.mostrar_times()
                     elif opcao_menu == "7":
-                        print(f"Você saiu da conta, {usuario_logado['nome']}.")
-                        usuario_logado = None  # Limpa o usuário logado
+                        print(f"Você saiu da conta, {usuario_logado.nome}.")
+                        usuario_logado = None
                         input("Pressione Enter para voltar ao menu inicial...")
-                        break  # Volta ao menu inicial
+                        break
                     elif opcao_menu == "8":
                         print("Saindo do sistema...")
-                        return  # Saindo do loop
+                        return
                     else:
                         print("Opção inválida! Tente novamente.")
                     
-                    input("Pressione Enter para continuar...")  # Espera o usuário antes de limpar a tela
+                    input("Pressione Enter para continuar...")
             else:
-                input("Pressione Enter para tentar novamente...")  # Aguarda o usuário após erro no login
+                input("Pressione Enter para tentar novamente...")
         elif opcao == "3":
             print("Saindo do sistema...")
             break
