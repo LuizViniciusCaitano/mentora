@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Controle</title>
+    <link rel="stylesheet" href="dash.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Painel de Controle</h1>
+        <p>Bem-vindo ao seu painel!</p>
+        <div id="user-info">
+            <h2>Informações do Usuário:</h2>
+            <ul>
+                <li><strong>ID:</strong> <span id="user-id"></span></li>
+                <li><strong>Nome:</strong> <span id="user-name"></span></li>
+                <li><strong>Email:</strong> <span id="user-email"></span></li>
+            </ul>
+        </div>
+        
+        <div class="button-container">
+            <a href="lista_times.html" class="button">Lista de Times Disponíveis</a>
+            <a href="criar_time.html" class="button">Criar Novo Time</a>
+            <a href="entrar_time.html" class="button">Entrar em um Time Existente</a>
+        </div>
+
+        <div id="current-team">
+            Time Atual: <span id="team-name">Nenhum time selecionado</span>
+        </div>
+
+        <a href="logout.html" class="button logout-button">Logout</a>
+    </div>
+    <script>
+        // Simulando um usuário logado
+        const user = {
+            id: 1,
+            name: "João da Silva",
+            email: "joao@example.com"
+        };
+
+        document.getElementById("user-id").textContent = user.id;
+        document.getElementById("user-name").textContent = user.name;
+        document.getElementById("user-email").textContent = user.email;
+
+        // Simulando um time atual (opcional)
+        const currentTeam = "Time do Exemplo"; // Substitua com a lógica para obter o time atual do usuário
+        document.getElementById("team-name").textContent = currentTeam || "Nenhum time selecionado";
+    </script>
+</body>
+</html>
