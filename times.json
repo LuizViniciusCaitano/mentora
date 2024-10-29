@@ -1,0 +1,17 @@
+[
+  {
+    "id": 1,
+    "nome": "Nazi",
+    "tecnico": "Hitler"
+  },
+  {
+    "id": 2,
+    "nome": "Terroristas",
+    "tecnico": "Osama Bin Laden"
+  },
+  {
+    "id": 3,
+    "nome": "11 de setembro",
+    "tecnico": "Kamikaze"
+  }
+]

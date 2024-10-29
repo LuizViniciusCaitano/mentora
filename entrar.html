@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrar em um Time</title>
+    <link rel="stylesheet" href="dash.css">
+</head>
+<body>
+    <header>
+        <h1>Entrar em um Time</h1>
+        <a href="login.html" class="button logout-button" onclick="logout()">Logout</a>
+    </header>
+
+    <main class="container">
+        <h2>Selecione um Time para Entrar:</h2>
+        <div id="team-selection">
+            <select id="team-dropdown"></select>
+            <button id="join-team-button" class="button" onclick="joinTeam()">Entrar no Time</button>
+        </div>
+    </main>
+
+    <script>
+        // Carregar a lista de times disponíveis ao iniciar a página
+        async function loadTeams() {
+            try {
+                const response = await fetch('http://localhost:3000/times'); // URL do seu servidor
+                if (!response.ok) throw new Error('Erro ao carregar times');
+                const teams = await response.json();
+
+                const dropdown = document.getElementById('team-dropdown');
+                dropdown.innerHTML = ''; // Limpa o dropdown
+
+                teams.forEach(team => {
+                    const option = document.createElement('option');
+                    option.value = team.id; // Supondo que cada time tem um ID
+                    option.textContent = team.nome;
+                    dropdown.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar a lista de times:', error);
+                alert('Não foi possível carregar os times. Tente novamente mais tarde.');
+            }
+        }
+
+        // Função para entrar em um time
+        async function joinTeam() {
+            const teamId = document.getElementById('team-dropdown').value;
+            const user = JSON.parse(localStorage.getItem('user'));
+
+            if (!user) {
+                alert('Você precisa estar logado para entrar em um time.');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:3000/entrar-time', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ userId: user.id, teamId: teamId }), // Envia o ID do usuário e o ID do time
+                });
+
+                if (!response.ok) throw new Error('Erro ao entrar no time');
+                const result = await response.json();
+                alert(result.message);
+
+                // Armazena o time atual no local storage
+                localStorage.setItem('currentTeam', result.teamName);
+                window.location.href = 'dashboard.html'; // Redireciona para o dashboard
+            } catch (error) {
+                console.error('Erro ao entrar no time:', error);
+                alert('Não foi possível entrar no time. Tente novamente mais tarde.');
+            }
+        }
+
+        // Carregar times ao carregar a página
+        window.onload = loadTeams;
+
+        // Função de logout (exemplo simples)
+        function logout() {
+            localStorage.removeItem('user'); // Remove os dados do usuário do local storage
+            window.location.href = 'login.html'; // Redireciona para a página de login
+        }
+    </script>
+</body>
+</html>
