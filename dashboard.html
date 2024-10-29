@@ -7,45 +7,92 @@
     <link rel="stylesheet" href="dash.css">
 </head>
 <body>
-    <div class="container">
+    <header>
         <h1>Painel de Controle</h1>
-        <p>Bem-vindo ao seu painel!</p>
-        <div id="user-info">
-            <h2>Informações do Usuário:</h2>
-            <ul>
-                <li><strong>ID:</strong> <span id="user-id"></span></li>
-                <li><strong>Nome:</strong> <span id="user-name"></span></li>
-                <li><strong>Email:</strong> <span id="user-email"></span></li>
-            </ul>
-        </div>
-        
-        <div class="button-container">
-            <a href="lista_times.html" class="button">Lista de Times Disponíveis</a>
-            <a href="criar_time.html" class="button">Criar Novo Time</a>
-            <a href="entrar_time.html" class="button">Entrar em um Time Existente</a>
-        </div>
-
-        <div id="current-team">
-            Time Atual: <span id="team-name">Nenhum time selecionado</span>
-        </div>
-
-        <a href="logout.html" class="button logout-button">Logout</a>
+        <a href="login.html" class="button logout-button" onclick="logout()">Logout</a>
+    </header>
+    
+    <div id="user-info">
+        <h2>Informações do Usuário:</h2>
+        <ul>
+            <li><strong>ID:</strong> <span id="user-id"></span></li>
+            <li><strong>Nome:</strong> <span id="user-name"></span></li>
+        </ul>
     </div>
+    
+    <main class="container">
+        <div class="button-container">
+            <button id="team-button" class="button" onclick="toggleTeams()">Lista de Times Disponíveis</button>
+            <div id="team-list" class="hidden">
+                <h2>Times Disponíveis:</h2>
+                <ul id="teams"></ul>
+            </div>
+            <a href="time.html" class="button">Criar Novo Time</a>
+            <a href="entrar.html" class="button">Entrar em um Time Existente</a>
+        </div>
+    </main>
+    
+    <div id="current-team">
+        Time Atual: <span id="team-name">Nenhum time selecionado</span>
+    </div>
+
     <script>
-        // Simulando um usuário logado
-        const user = {
-            id: 1,
-            name: "João da Silva",
-            email: "joao@example.com"
+        // Simula a recuperação dos dados do usuário e do time no local storage
+        window.onload = async function() {
+            const user = JSON.parse(localStorage.getItem('user'));
+            const team = localStorage.getItem('currentTeam'); // Supondo que você armazena o time atual no local storage
+
+            if (user) {
+                document.getElementById('user-id').textContent = user.id;
+                document.getElementById('user-name').textContent = user.nome;
+            } else {
+                // Redirecionar para a página de login se o usuário não estiver autenticado
+                window.location.href = 'login.html';
+            }
+
+            // Exibir o time atual, se houver
+            if (team) {
+                document.getElementById('team-name').textContent = team; // Exibe o nome do time
+            }
+
+            // Carregar a lista de times
+            await loadTeams();
         };
 
-        document.getElementById("user-id").textContent = user.id;
-        document.getElementById("user-name").textContent = user.name;
-        document.getElementById("user-email").textContent = user.email;
+        // Função para carregar a lista de times disponíveis
+        async function loadTeams() {
+            try {
+                const response = await fetch('http://localhost:3000/times'); // URL do seu servidor
+                if (!response.ok) throw new Error('Erro ao carregar times');
+                const teams = await response.json();
 
-        // Simulando um time atual (opcional)
-        const currentTeam = "Time do Exemplo"; // Substitua com a lógica para obter o time atual do usuário
-        document.getElementById("team-name").textContent = currentTeam || "Nenhum time selecionado";
+                const teamList = document.getElementById('teams');
+                teamList.innerHTML = ''; // Limpa a lista de times
+
+                teams.forEach(team => {
+                    const li = document.createElement('li');
+                    li.textContent = team.nome;
+                    teamList.appendChild(li);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar a lista de times:', error);
+                alert('Não foi possível carregar os times. Tente novamente mais tarde.');
+            }
+        }
+
+        // Função para alternar a visibilidade da lista de times
+        function toggleTeams() {
+            const teamList = document.getElementById('team-list');
+            teamList.classList.toggle('hidden');
+        }
+
+        // Função de logout (exemplo simples)
+        function logout() {
+            localStorage.removeItem('user'); // Remove os dados do usuário do local storage
+            window.location.href = 'login.html'; // Redireciona para a página de login
+        }
     </script>
+
+    <script src="dash.js"></script>
 </body>
 </html>
