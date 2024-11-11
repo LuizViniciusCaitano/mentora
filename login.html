@@ -7,44 +7,51 @@
     <link rel="stylesheet" href="login.css">
 </head>
 <body>
-    <div class="container">
+    <header>
         <h1>Login</h1>
-        <form id="loginForm">
+    </header>
+    
+    <main>
+        <form id="login-form">
             <label for="email">Email:</label>
             <input type="email" id="email" required>
-            
             <label for="senha">Senha:</label>
             <input type="password" id="senha" required>
-            
-            <input type="submit" value="Entrar">
+            <button type="submit">Entrar</button>
         </form>
-        <p>Não tem uma conta? <a href="cadastrar.html">Cadastre-se</a></p>
-    </div>
+        <div id="message"></div>
+    </main>
 
     <script>
-        const form = document.getElementById('loginForm');
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        document.getElementById('login-form').addEventListener('submit', function(event) {
+            event.preventDefault(); // Previne o envio padrão do formulário
 
             const email = document.getElementById('email').value;
             const senha = document.getElementById('senha').value;
 
-            const response = await fetch('http://localhost:3000/login', {
+            // Envia os dados de login para o servidor
+            fetch('http://localhost:3000/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ username: email, password: senha }) // Corrigido para enviar "username" e "password"
+                body: JSON.stringify({ email, senha })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message === 'Login bem-sucedido') {
+                    // Salva o usuário no localStorage
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    // Redireciona para o dashboard
+                    window.location.href = 'dashboard.html';
+                } else {
+                    document.getElementById('message').textContent = data.message;
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao fazer login:', error);
+                document.getElementById('message').textContent = 'Erro ao fazer login.';
             });
-
-            if (response.ok) {
-                const result = await response.json();
-                alert('Login bem-sucedido: ' + result.message);
-                window.location.href = 'dashboard.html'; // Redireciona para a página de dashboard
-            } else {
-                alert('Erro ao fazer login. Verifique suas credenciais.');
-            }
         });
     </script>
 </body>
