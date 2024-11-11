@@ -1,80 +1,63 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastrar Novo Time</title>
     <link rel="stylesheet" href="time.css">
-    <style>
-        /* Estilo da mensagem */
-        #message {
-            display: none; /* Ocultar por padrão */
-            transition: opacity 0.5s; /* Transição suave */
-            opacity: 1; /* Começa totalmente visível */
-        }
-    </style>
+    <title>Cadastrar Time</title>
 </head>
 <body>
-    <header>
-        <h1>Cadastrar Novo Time</h1>
-    </header>
-    
-    <main class="container">
-        <form id="register-form">
-            <label for="team-name">Nome do Time:</label>
-            <input type="text" id="team-name" required>
+    <h1>Cadastrar Time</h1>
+    <form id="formCadastrarTime">
+        <label for="nome">Nome do Time:</label>
+        <input type="text" id="nome" name="nome" required><br><br>
 
-            <label for="team-coach">Nome do Técnico:</label>
-            <input type="text" id="team-coach" required>
+        <label for="tecnico">Nome do Técnico:</label>
+        <input type="text" id="tecnico" name="tecnico" required><br><br>
 
-            <button type="submit">Cadastrar Time</button>
-        </form>
-        <div id="message"></div> <!-- Ocultar por padrão -->
-    </main>
+        <button type="submit">Cadastrar Time</button>
+    </form>
+    <p id="message"></p> <!-- Exibe mensagens de sucesso ou erro -->
 
     <script>
-        const form = document.getElementById('register-form');
-        const messageDiv = document.getElementById('message');
+        // Lidar com o envio do formulário
+        document.getElementById('formCadastrarTime').addEventListener('submit', function(event) {
+            event.preventDefault(); // Impede o recarregamento da página
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
+            const nome = document.getElementById('nome').value;
+            const tecnico = document.getElementById('tecnico').value;
 
-            const teamName = document.getElementById('team-name').value;
-            const teamCoach = document.getElementById('team-coach').value;
+            const timeData = {
+                nome: nome,
+                tecnico: tecnico
+            };
 
-            try {
-                const response = await fetch('http://localhost:3000/cadastrar-time', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ nome: teamName, tecnico: teamCoach })
-                });
-
-                const data = await response.json();
-                messageDiv.textContent = data.message;
-                messageDiv.style.color = response.ok ? 'green' : 'red';
-                messageDiv.style.opacity = '1'; // Começar visível
-                messageDiv.style.display = 'block'; // Mostrar mensagem
-
-                // Ocultar a mensagem após 5 segundos
-                setTimeout(() => {
-                    messageDiv.style.opacity = '0'; // Iniciar a transição
-                    // Usar um timeout para ocultar após a transição
-                    setTimeout(() => {
-                        messageDiv.style.display = 'none';
-                    }, 500); // 500 ms para coincidir com a duração da transição
-                }, 5000); // 5000 ms = 5 segundos
-
-                // Limpar os campos do formulário
-                form.reset();
-            } catch (error) {
-                messageDiv.textContent = 'Erro ao cadastrar o time.';
-                messageDiv.style.color = 'red';
-                messageDiv.style.display = 'block'; // Mostrar mensagem
-                messageDiv.style.opacity = '1'; // Garantir que a opacidade seja 1
-                console.error('Erro:', error);
-            }
+            // Envia os dados para o servidor
+            fetch('http://localhost:3000/cadastrar-time', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(timeData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Exibe mensagem de sucesso ou erro
+                const messageElement = document.getElementById('message');
+                if (data.message) {
+                    messageElement.textContent = data.message;
+                    messageElement.style.color = 'green';
+                } else {
+                    messageElement.textContent = 'Ocorreu um erro. Tente novamente.';
+                    messageElement.style.color = 'red';
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao cadastrar time:', error);
+                const messageElement = document.getElementById('message');
+                messageElement.textContent = 'Ocorreu um erro ao conectar ao servidor.';
+                messageElement.style.color = 'red';
+            });
         });
     </script>
 </body>

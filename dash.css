@@ -12,7 +12,6 @@ body {
 header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
     background-color: #333;
     color: white;
     padding: 15px 30px;
@@ -20,6 +19,7 @@ header {
 
 header h1 {
     margin: 0;
+    text-align: center;
 }
 
 .logout-button {
@@ -57,6 +57,7 @@ header h1 {
     justify-content: center;
     align-items: center;
     flex-direction: column;
+    padding: 20px;
 }
 
 .button-container {
@@ -74,7 +75,7 @@ header h1 {
     background-color: #007bff;
     border-radius: 5px;
     text-align: center;
-    transition: background-color 0.3s;
+    transition: background-color 0.3s, transform 0.5s ease; /* Adiciona transição para a transformação */
 }
 
 .button:hover {
@@ -96,24 +97,29 @@ header h1 {
 
 /* Estilos e animação da lista de times */
 #team-list {
-    transition: max-height 0.3s ease;
+    transition: max-height 0.3s ease, transform 0.5s ease; /* Adiciona transição para o transform */
     overflow: hidden;
-    position: absolute; /* Mantém a lista acima do fluxo normal */
+    position: relative; /* Mantém a lista na posição relativa ao botão */
     background-color: #f9f9f9;
     border-radius: 5px;
-    width: calc(100% - 40px); /* Para que a lista não ocupe o espaço dos botões */
-    z-index: 10; /* Garante que a lista esteja acima de outros elementos */
-    max-height: 0; /* Inicialmente oculto */
-    padding: 0 20px; /* Para manter o padding ao abrir */
+    width: 100%;
+    max-width: 400px; /* Define um limite de largura para a lista */
+    z-index: 10;
+    max-height: 0;
+    padding: 0 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 #team-list.open {
     max-height: 200px; /* Ajuste conforme necessário */
-    padding: 10px 20px; /* Padding ao abrir */
+    padding: 10px 20px; /* Ajusta o padding quando a lista estiver aberta */
+    margin-top: 10px; /* Espaço entre o botão e a lista */
 }
 
 #team-list h2 {
     margin-top: 0;
+    font-size: 1.2em;
+    color: #333;
 }
 
 #teams {
@@ -122,7 +128,20 @@ header h1 {
 }
 
 /* Estilo do botão que se move para cima */
-.shift-up {
-    transform: translateY(-50px); /* Move o botão para cima */
-    transition: transform 0.5s ease; /* Transição suave */
+.shifted {
+    transform: translateY(-60px); /* Move o botão 60px para cima */
+}
+
+/* Ajuste para responsividade */
+@media (max-width: 600px) {
+    #user-info,
+    #current-team {
+        width: 90%;
+        left: 5%;
+        right: auto;
+    }
+
+    #team-list {
+        width: calc(100% - 40px);
+    }
 }

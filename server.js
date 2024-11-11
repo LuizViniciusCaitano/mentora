@@ -6,53 +6,32 @@ const crypto = require('crypto');
 // Porta do servidor
 const porta = 3000;
 
-// Função para ler usuários do arquivo JSON
-const readUsers = () => {
-    const filePath = path.join(__dirname, 'usuarios.json');
-
+// Função genérica para ler JSON de um arquivo
+const readJSONFile = (filePath, defaultData = []) => {
     if (!fs.existsSync(filePath)) {
-        fs.writeFileSync(filePath, JSON.stringify([]), 'utf-8');
+        fs.writeFileSync(filePath, JSON.stringify(defaultData), 'utf-8');
     }
 
     const data = fs.readFileSync(filePath, 'utf-8');
-
     try {
-        const users = JSON.parse(data);
-        return Array.isArray(users) ? users : [];
+        const parsedData = JSON.parse(data);
+        return Array.isArray(parsedData) ? parsedData : defaultData;
     } catch (error) {
-        console.error("Erro ao ler o arquivo JSON:", error);
-        return [];
+        console.error(`Erro ao ler o arquivo JSON (${filePath}):`, error);
+        return defaultData;
     }
 };
 
-// Função para salvar usuários no arquivo JSON
-const saveUsers = (users) => {
-    fs.writeFileSync(path.join(__dirname, 'usuarios.json'), JSON.stringify(users, null, 2));
+// Função genérica para salvar JSON em um arquivo
+const saveJSONFile = (filePath, data) => {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
 };
 
-// Função para ler times do arquivo JSON
-const readTeams = () => {
-    const filePath = path.join(__dirname, 'times.json');
-
-    if (!fs.existsSync(filePath)) {
-        fs.writeFileSync(filePath, JSON.stringify([]), 'utf-8');
-    }
-
-    const data = fs.readFileSync(filePath, 'utf-8');
-
-    try {
-        const teams = JSON.parse(data);
-        return Array.isArray(teams) ? teams : [];
-    } catch (error) {
-        console.error("Erro ao ler o arquivo JSON de times:", error);
-        return [];
-    }
-};
-
-// Função para salvar times no arquivo JSON
-const saveTeams = (teams) => {
-    fs.writeFileSync(path.join(__dirname, 'times.json'), JSON.stringify(teams, null, 2));
-};
+// Funções específicas para usuários e times
+const readUsers = () => readJSONFile(path.join(__dirname, 'usuarios.json'));
+const saveUsers = (users) => saveJSONFile(path.join(__dirname, 'usuarios.json'), users);
+const readTeams = () => readJSONFile(path.join(__dirname, 'times.json'));
+const saveTeams = (teams) => saveJSONFile(path.join(__dirname, 'times.json'), teams);
 
 // Função para gerar um token de sessão
 const generateSessionToken = () => crypto.randomBytes(16).toString('hex');
@@ -64,7 +43,7 @@ const sessions = {};
 const server = http.createServer((req, res) => {
     // Configurações de CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     console.log(`Recebido: ${req.method} ${req.url}`);
@@ -75,9 +54,7 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    // Carregar a página HTML para entrar em um time
-    if (req.method === 'GET' && req.url === '/entrar-time') {
-        const filePath = path.join(__dirname, 'entrar_time.html');
+    const handleHTMLPage = (filePath, res) => {
         fs.readFile(filePath, (err, data) => {
             if (err) {
                 res.writeHead(404);
@@ -88,28 +65,25 @@ const server = http.createServer((req, res) => {
                 res.end(data);
             }
         });
+    };
 
-    // Cadastro de usuário
-    } else if (req.method === 'POST' && req.url === '/cadastrar') {
+    const handleJSONRequest = (req, callback) => {
         let body = '';
+        req.on('data', chunk => body += chunk.toString());
+        req.on('end', () => callback(JSON.parse(body)));
+    };
 
-        req.on('data', chunk => {
-            body += chunk.toString();
-        });
-
-        req.on('end', () => {
-            console.log('Dados recebidos para cadastro:', body);
-            try {
-                const userData = JSON.parse(body);
-                const users = readUsers();
-
-                if (users.some(user => user.email === userData.email)) {
-                    res.writeHead(400);
-                    res.end(JSON.stringify({ message: 'Email já cadastrado' }));
-                    console.log('Email já cadastrado:', userData.email);
-                    return;
-                }
-
+    // Rotas
+    if (req.method === 'GET' && req.url === '/entrar-time') {
+        handleHTMLPage(path.join(__dirname, 'entrar_time.html'), res);
+        
+    } else if (req.method === 'POST' && req.url === '/cadastrar') {
+        handleJSONRequest(req, userData => {
+            const users = readUsers();
+            if (users.some(user => user.email === userData.email)) {
+                res.writeHead(400);
+                res.end(JSON.stringify({ message: 'Email já cadastrado' }));
+            } else {
                 users.push({
                     id: users.length + 1,
                     nome: userData.nome,
@@ -117,126 +91,106 @@ const server = http.createServer((req, res) => {
                     senha: userData.senha
                 });
                 saveUsers(users);
-
-                res.writeHead(200);
+                res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ message: 'Usuário cadastrado com sucesso' }));
-                console.log('Usuário cadastrado com sucesso:', userData.nome);
-            } catch (error) {
-                console.error('Erro ao cadastrar:', error);
-                res.writeHead(400);
-                res.end(JSON.stringify({ message: 'Dados inválidos' }));
             }
         });
 
-    // Cadastro de time
     } else if (req.method === 'POST' && req.url === '/cadastrar-time') {
-        let body = '';
-
-        req.on('data', chunk => {
-            body += chunk.toString();
+        handleJSONRequest(req, teamData => {
+            const teams = readTeams();
+            teams.push({
+                id: teams.length + 1,
+                nome: teamData.nome,
+                tecnico: teamData.tecnico,
+                membros: []
+            });
+            saveTeams(teams);
+            // Definir o cabeçalho corretamente
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ message: 'Time cadastrado com sucesso' }));
         });
 
-        req.on('end', () => {
-            console.log('Dados recebidos para cadastro de time:', body);
-            try {
-                const teamData = JSON.parse(body);
-                const teams = readTeams();
-
-                // Aqui você pode adicionar validações se necessário
-
-                teams.push({
-                    id: teams.length + 1,
-                    nome: teamData.nome,
-                    tecnico: teamData.tecnico,
-                    membros: [] // Adiciona um array para armazenar os membros do time
-                });
-                saveTeams(teams);
-
-                res.writeHead(200);
-                res.end(JSON.stringify({ message: 'Time cadastrado com sucesso' }));
-                console.log('Time cadastrado com sucesso:', teamData.nome);
-            } catch (error) {
-                console.error('Erro ao cadastrar o time:', error);
-                res.writeHead(400);
-                res.end(JSON.stringify({ message: 'Dados inválidos' }));
-            }
-        });
-
-    // Login de usuário
     } else if (req.method === 'POST' && req.url === '/login') {
-        let body = '';
-
-        req.on('data', chunk => {
-            body += chunk.toString();
-        });
-
-        req.on('end', () => {
-            console.log('Dados recebidos para login:', body);
-            try {
-                const loginData = JSON.parse(body);
-                const users = readUsers();
-
-                const user = users.find(user => user.email === loginData.email && user.senha === loginData.senha);
-
-                if (user) {
-                    const sessionToken = generateSessionToken();
-                    sessions[sessionToken] = user;
-
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ message: 'Login bem-sucedido', user, sessionToken }));
-                    console.log('Login bem-sucedido para:', loginData.email);
-                } else {
-                    res.writeHead(401);
-                    res.end(JSON.stringify({ message: 'Credenciais inválidas' }));
-                    console.log('Falha no login para:', loginData.email);
-                }
-            } catch (error) {
-                console.error('Erro ao fazer login:', error);
-                res.writeHead(400);
-                res.end(JSON.stringify({ message: 'Dados inválidos' }));
+        handleJSONRequest(req, loginData => {
+            const users = readUsers();
+            const user = users.find(user => user.email === loginData.email && user.senha === loginData.senha);
+            if (user) {
+                const sessionToken = generateSessionToken();
+                sessions[sessionToken] = user;
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ message: 'Login bem-sucedido', user, sessionToken }));
+            } else {
+                res.writeHead(401);
+                res.end(JSON.stringify({ message: 'Credenciais inválidas' }));
             }
         });
 
-    // Entrar em um time
     } else if (req.method === 'POST' && req.url === '/entrar-time') {
-        let body = '';
+        handleJSONRequest(req, ({ userId, teamId }) => {
+            const users = readUsers();
+            const teams = readTeams();
+            const user = users.find(user => user.id === userId);
+            const team = teams.find(team => team.id === teamId);
 
-        req.on('data', chunk => {
-            body += chunk.toString();
-        });
-
-        req.on('end', () => {
-            console.log('Dados recebidos para entrar em um time:', body);
-            try {
-                const { userId, teamId } = JSON.parse(body);
-                const users = readUsers();
-                const teams = readTeams();
-
-                // Verifica se o usuário e o time existem
-                const user = users.find(user => user.id === userId);
-                const team = teams.find(team => team.id === teamId);
-
-                if (!user || !team) {
+            if (!user || !team) {
+                res.writeHead(400);
+                res.end(JSON.stringify({ message: 'Usuário ou time não encontrado' }));
+            } else {
+                // Verifica se o jogador já está no time
+                if (team.membros && team.membros.some(jogador => jogador.id === userId)) {
                     res.writeHead(400);
-                    res.end(JSON.stringify({ message: 'Usuário ou time não encontrado' }));
+                    res.end(JSON.stringify({ message: 'Usuário já está no time' }));
                     return;
                 }
 
-                // Adiciona o usuário à lista de membros do time
-                team.membros.push(userId);
+                // Adiciona o usuário completo como "jogador" ao time
+                if (!team.membros) {
+                    team.membros = [];
+                }
+
+                team.membros.push({
+                    id: user.id,
+                    nome: user.nome,
+                    email: user.email
+                });
+
                 saveTeams(teams); // Salva as alterações no arquivo de times
 
                 res.writeHead(200);
                 res.end(JSON.stringify({ message: 'Entrou no time com sucesso', teamName: team.nome }));
                 console.log('Usuário entrou no time com sucesso:', team.nome);
-            } catch (error) {
-                console.error('Erro ao entrar no time:', error);
-                res.writeHead(400);
-                res.end(JSON.stringify({ message: 'Dados inválidos' }));
             }
         });
 
-    // Verificação de sessão (validação no dashboard)
+    } else if (req.method === 'DELETE' && req.url.startsWith('/excluir-usuario')) {
+        handleJSONRequest(req, ({ userId }) => {
+            const users = readUsers();
+            const updatedUsers = users.filter(user => user.id !== userId);
+            if (updatedUsers.length === users.length) {
+                res.writeHead(404);
+                res.end(JSON.stringify({ message: 'Usuário não encontrado' }));
+            } else {
+                saveUsers(updatedUsers);
+                res.writeHead(200);
+                res.end(JSON.stringify({ message: 'Usuário excluído com sucesso' }));
+            }
+        });
+
+    } else if (req.method === 'DELETE' && req.url.startsWith('/excluir-time')) {
+        handleJSONRequest(req, ({ teamId }) => {
+            const teams = readTeams();
+            const updatedTeams = teams.filter(team => team.id !== teamId);
+            if (updatedTeams.length === teams.length) {
+                res.writeHead(404);
+                res.end(JSON.stringify({ message: 'Time não encontrado' }));
+            } else {
+                saveTeams(updatedTeams);
+                res.writeHead(200);
+                res.end(JSON.stringify({ message: 'Time excluído com sucesso' }));
+            }
+        });
+
     } else if (req.method === 'GET' && req.url.startsWith('/dashboard')) {
         const urlParams = new URLSearchParams(req.url.split('?')[1]);
         const sessionToken = urlParams.get('sessionToken');
@@ -245,24 +199,19 @@ const server = http.createServer((req, res) => {
             const user = sessions[sessionToken];
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ message: 'Usuário autenticado', user }));
-            console.log('Usuário autenticado:', user.email);
         } else {
             res.writeHead(401);
             res.end(JSON.stringify({ message: 'Usuário não logado' }));
-            console.log('Acesso negado: Usuário não logado.');
         }
 
-    // Obter lista de times
     } else if (req.method === 'GET' && req.url === '/times') {
         const teams = readTeams();
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(teams));
-        console.log('Lista de times retornada com sucesso.');
 
     } else {
         res.writeHead(404);
         res.end(JSON.stringify({ message: 'Rota não encontrada' }));
-        console.log('Rota não encontrada:', req.url);
     }
 });
 

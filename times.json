@@ -1,17 +1,26 @@
 [
   {
     "id": 1,
-    "nome": "Nazi",
-    "tecnico": "Hitler"
+    "nome": "FURIA Valorant",
+    "tecnico": "Nyang",
+    "membros": []
   },
   {
     "id": 2,
-    "nome": "Terroristas",
-    "tecnico": "Osama Bin Laden"
+    "nome": "Loud Valorant",
+    "tecnico": "STK",
+    "membros": []
   },
   {
     "id": 3,
-    "nome": "11 de setembro",
-    "tecnico": "Kamikaze"
+    "nome": "Loud LOL",
+    "tecnico": "Playhard",
+    "membros": []
+  },
+  {
+    "id": 4,
+    "nome": "MIBR CS",
+    "tecnico": "Antonio",
+    "membros": []
   }
 ]

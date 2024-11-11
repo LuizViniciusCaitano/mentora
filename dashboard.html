@@ -8,8 +8,8 @@
 </head>
 <body>
     <header>
-        <h1>Painel de Controle</h1>
-        <a href="login.html" class="button logout-button" onclick="logout()">Logout</a>
+        <h1>MENTORA</h1>
+        <a href="login.html" class="button logout-button" id="logout-button">Logout</a>
     </header>
     
     <div id="user-info">
@@ -22,77 +22,15 @@
     
     <main class="container">
         <div class="button-container">
-            <button id="team-button" class="button" onclick="toggleTeams()">Lista de Times Disponíveis</button>
+            <button id="team-button" class="button">Lista de Times Disponíveis</button>
             <div id="team-list" class="hidden">
                 <h2>Times Disponíveis:</h2>
                 <ul id="teams"></ul>
             </div>
             <a href="time.html" class="button">Criar Novo Time</a>
-            <a href="entrar.html" class="button">Entrar em um Time Existente</a>
         </div>
     </main>
     
-    <div id="current-team">
-        Time Atual: <span id="team-name">Nenhum time selecionado</span>
-    </div>
-
-    <script>
-        // Simula a recuperação dos dados do usuário e do time no local storage
-        window.onload = async function() {
-            const user = JSON.parse(localStorage.getItem('user'));
-            const team = localStorage.getItem('currentTeam'); // Supondo que você armazena o time atual no local storage
-
-            if (user) {
-                document.getElementById('user-id').textContent = user.id;
-                document.getElementById('user-name').textContent = user.nome;
-            } else {
-                // Redirecionar para a página de login se o usuário não estiver autenticado
-                window.location.href = 'login.html';
-            }
-
-            // Exibir o time atual, se houver
-            if (team) {
-                document.getElementById('team-name').textContent = team; // Exibe o nome do time
-            }
-
-            // Carregar a lista de times
-            await loadTeams();
-        };
-
-        // Função para carregar a lista de times disponíveis
-        async function loadTeams() {
-            try {
-                const response = await fetch('http://localhost:3000/times'); // URL do seu servidor
-                if (!response.ok) throw new Error('Erro ao carregar times');
-                const teams = await response.json();
-
-                const teamList = document.getElementById('teams');
-                teamList.innerHTML = ''; // Limpa a lista de times
-
-                teams.forEach(team => {
-                    const li = document.createElement('li');
-                    li.textContent = team.nome;
-                    teamList.appendChild(li);
-                });
-            } catch (error) {
-                console.error('Erro ao carregar a lista de times:', error);
-                alert('Não foi possível carregar os times. Tente novamente mais tarde.');
-            }
-        }
-
-        // Função para alternar a visibilidade da lista de times
-        function toggleTeams() {
-            const teamList = document.getElementById('team-list');
-            teamList.classList.toggle('hidden');
-        }
-
-        // Função de logout (exemplo simples)
-        function logout() {
-            localStorage.removeItem('user'); // Remove os dados do usuário do local storage
-            window.location.href = 'login.html'; // Redireciona para a página de login
-        }
-    </script>
-
     <script src="dash.js"></script>
 </body>
 </html>
